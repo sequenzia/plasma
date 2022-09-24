@@ -5,7 +5,7 @@ from google.cloud.storage import Bucket
 
 class Cloud:
 
-    def __init__(self, app: Any) -> None:
+    def __init__(self, app: 'App') -> None:
 
         self.app = app
         self.config = None
