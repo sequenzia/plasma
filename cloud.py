@@ -8,12 +8,17 @@ class Cloud:
     def __init__(self, app: Any) -> None:
 
         self.app = app
+        self.config = None
 
     def process_config(self, config: Dict) -> None:
+
+        self.config = self.app.config
 
         for k, v in config.items():
             if k == 'google':
                 self.google = self.Google(self.app, **v)
+
+
 
     class Google:
 
@@ -30,7 +35,6 @@ class Cloud:
 
             self.setup_files()
 
-
         def setup_files(self) -> None:
 
             bucket = self.storage_client_anonymous.bucket(self.bucket_name)
@@ -41,7 +45,11 @@ class Cloud:
 
             return
 
-        def download_save_file(self, zip_fn: str, data_dir: str, bucket: Bucket, blob_name: str) -> str:
+        def download_save_file(self,
+                               zip_fn: str,
+                               data_dir: str,
+                               bucket: Bucket,
+                               blob_name: str) -> str:
 
             fn = zip_fn.rstrip('.zip')
             fp = data_dir + '/' + fn

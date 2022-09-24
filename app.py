@@ -28,7 +28,7 @@ class App:
 
         self.process_config_file()
 
-        if hasattr(self.config, 'cloud'):
+        if self.cloud.config:
             self.setup_datasets()
         else:
             warnings.warn('Cannot setup datasets')
