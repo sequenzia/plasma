@@ -50,8 +50,10 @@ def split_data(data,
                pre_shuffle=False,
                to_numpy=False,
                dtype=np.float32,
-               train_no_pos=False,
+               pos_dist=False,
                debug_on=False):
+
+    train_no_pos = False
     seed = 0
 
     x_cols, y_col = cols[0], cols[1][0]
@@ -63,12 +65,37 @@ def split_data(data,
                     'test': val_test_config[1] / (1 - train_size) if val_test_config[1] else 0}
 
     # break out pos class
-    if train_no_pos:
-        pos_data = data[data[y_col] == 1]
+    pos_data = None
+    main_data = data
+
+    if isinstance(pos_dist, list):
+
         main_data = data[data[y_col] == 0]
-    else:
-        pos_data = None
-        main_data = data
+        pos_data_base = data[data[y_col] == 1]
+        pos_data_base_size = pos_data_base.shape[0]
+
+        pos_split_config = {'train': pos_dist[0],
+                            'val': pos_dist[1],
+                            'test': pos_dist[2]}
+
+        pos_data = {'train': None, 'val': None, 'test': None}
+
+        if pos_split_config['train']:
+            pos_data['train'], pos_data_vt = train_test_split(pos_data_base, train_size=pos_split_config['train'], random_state=seed, shuffle=pre_shuffle)
+
+            pos_split_config
+
+        else:
+            pos_data_vt = pos_data_base
+
+        if pos_split_config['val'] and pos_split_config['test']:
+            pos_data['val'], pos_data['test'] = train_test_split(pos_data_vt, train_size=pos_split_config['val'], random_state=seed, shuffle=pre_shuffle)
+
+        elif pos_split_config['val'] and not pos_split_config['test']:
+            pos_data['val'] = pos_data_vt
+
+        else:
+            pos_data['test'] = pos_data_vt
 
     split_data = {'train': None,
                   'val': None,
