@@ -13,6 +13,9 @@ class App:
         if not root:
             root = os.getcwd()
 
+        if not app_type:
+            app_type = "google"
+
         self.root = root
         self.app_type = app_type
         self.datasets = []
