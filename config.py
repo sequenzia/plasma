@@ -24,7 +24,7 @@ class Config:
                     self.app.data_dir = _value
 
         if not os.path.exists(self.config_file):
-            self.create_config_file()
+            self.create_config_file(self.app.app_type)
 
         with open(self.config_file, 'r') as file:
 
@@ -42,9 +42,12 @@ class Config:
     def create_config_file(self, file_base: Optional[str]=None) -> None:
 
         if not file_base:
-            file_base = {'dirs': {'data': 'data'}}
+            file_base = {"dirs": {"data": "data"}}
+
+        if file_base == 'google':
+            file_base = {"dirs": {"data": "data"}, "cloud": {"google": {"bucket_name": "sequenzia-public", "blob_dir": "projects/data", "cloud_files": "creditcard.csv.zip"}}}
 
         with open(self.config_file, 'w') as file:
-            documents = yaml.dump(file_base, file)
+            yml_doc = yaml.dump(file_base, file, default_flow_style=False, sort_keys=False)
 
 

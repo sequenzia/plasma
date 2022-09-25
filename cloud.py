@@ -39,7 +39,7 @@ class Cloud:
 
             bucket = self.storage_client_anonymous.bucket(self.bucket_name)
 
-            for fn in self.cloud_files:
+            for fn in self.cloud_files.split(','):
                 blob_name = self.blob_dir+'/'+fn
                 self.local_files.append(self.download_save_file(fn, self.app.data_dir, bucket, blob_name))
 

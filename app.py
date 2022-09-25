@@ -8,12 +8,13 @@ from .cloud import Cloud
 
 class App:
 
-    def __init__(self, root: Optional[str] = None) -> None:
+    def __init__(self, root: Optional[str] = None, app_type: Optional[str] = None) -> None:
 
         if not root:
             root = os.getcwd()
 
         self.root = root
+        self.app_type = app_type
         self.datasets = []
 
         self.setup_app()
