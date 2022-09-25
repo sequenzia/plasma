@@ -42,8 +42,7 @@ def counts_check(data, y_col):
 
     n_records = train_n_records + val_n_records + test_n_records
 
-    print(
-        f"Total Records: {n_records} | Train: {(train_n_records / n_records):.2f} | Val: {(val_n_records / n_records):.2f} | Test: {(test_n_records / n_records):.2f}")
+    print(f"\nTotal Records: {n_records} | Train: {(train_n_records / n_records):.2f} | Val: {(val_n_records / n_records):.2f} | Test: {(test_n_records / n_records):.2f}")
 
 def split_data(data,
                val_test_config,
@@ -118,8 +117,8 @@ def split_data(data,
         n_train_pos = split_data['train'][split_data['train']['Class'] == 1].shape[0]
         n_val_pos = split_data['val'][split_data['val']['Class'] == 1].shape[0] if split_data['val'] is not None else 0
         n_test_pos = split_data['test'][split_data['test']['Class'] == 1].shape[0] if split_data[
-                                                                                          'test'] is not None else 0
-        print(f"Train Pos: {n_train_pos} | Val Pos: {n_val_pos} | Test Pos: {n_test_pos}")
+                                                                               'test'] is not None else 0
+        print(f"\nTrain Pos: {n_train_pos} | Val Pos: {n_val_pos} | Test Pos: {n_test_pos}")
 
     # split x, y
     for k, v in split_data.items():
@@ -134,6 +133,9 @@ def split_data(data,
                 y = y.to_numpy()
 
             split_data[k] = ModelData(x, y)
+
+    if debug_on:
+        counts_check(split_data,y_col)
 
     return split_data
 
