@@ -174,7 +174,8 @@ def preprocess_data(datasets):
         min_max_scaler = MinMaxScaler((0, 1))
 
         if v:
-            v.x['Amount'] = norm_scaler.fit_transform(v.x[['Amount']])
+            if 'Amount' in v.x.columns:
+                v.x['Amount'] = norm_scaler.fit_transform(v.x[['Amount']])
             datasets[k].x = min_max_scaler.fit_transform(v.x)
 
     return datasets
