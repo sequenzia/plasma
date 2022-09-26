@@ -45,6 +45,42 @@ def counts_check(data, y_col):
 
     print(f"\nTotal Records: {n_records} | Train: {(train_n_records / n_records):.2f} | Val: {(val_n_records / n_records):.2f} | Test: {(test_n_records / n_records):.2f}")
 
+def gen_pos_dists(data, pos_dist, y_col):
+
+    main_data = data
+    pos_data = data[data[y_col] == 1]
+
+    if isinstance(pos_dist, list):
+        main_data = data[data[y_col] == 0]
+        # pos_data_base = data[data[y_col] == 1]
+
+        # pos_data_base_size = pos_data_base.shape[0]
+        #
+        # pos_split_config = {'train': pos_dist[0],
+        #                     'val': pos_dist[1],
+        #                     'test': pos_dist[2]}
+        #
+        # pos_data = {'train': None, 'val': None, 'test': None}
+        #
+        # if pos_split_config['train']:
+        #     pos_data['train'], pos_data_vt = train_test_split(pos_data_base, train_size=pos_split_config['train'], random_state=seed, shuffle=pre_shuffle)
+        #
+        #     pos_split_config
+        #
+        # else:
+        #     pos_data_vt = pos_data_base
+        #
+        # if pos_split_config['val'] and pos_split_config['test']:
+        #     pos_data['val'], pos_data['test'] = train_test_split(pos_data_vt, train_size=pos_split_config['val'], random_state=seed, shuffle=pre_shuffle)
+        #
+        # elif pos_split_config['val'] and not pos_split_config['test']:
+        #     pos_data['val'] = pos_data_vt
+        #
+        # else:
+        #     pos_data['test'] = pos_data_vt
+
+    return main_data, pos_data
+
 def split_data(data,
                val_test_config,
                cols,
@@ -66,42 +102,13 @@ def split_data(data,
                     'test': val_test_config[1] / (1 - train_size) if val_test_config[1] else 0}
 
     # break out pos class
-    pos_data = None
-    main_data = data
 
-    if isinstance(pos_dist, list):
-
-        main_data = data[data[y_col] == 0]
-        pos_data_base = data[data[y_col] == 1]
-        pos_data_base_size = pos_data_base.shape[0]
-
-        pos_split_config = {'train': pos_dist[0],
-                            'val': pos_dist[1],
-                            'test': pos_dist[2]}
-
-        pos_data = {'train': None, 'val': None, 'test': None}
-
-        if pos_split_config['train']:
-            pos_data['train'], pos_data_vt = train_test_split(pos_data_base, train_size=pos_split_config['train'], random_state=seed, shuffle=pre_shuffle)
-
-            pos_split_config
-
-        else:
-            pos_data_vt = pos_data_base
-
-        if pos_split_config['val'] and pos_split_config['test']:
-            pos_data['val'], pos_data['test'] = train_test_split(pos_data_vt, train_size=pos_split_config['val'], random_state=seed, shuffle=pre_shuffle)
-
-        elif pos_split_config['val'] and not pos_split_config['test']:
-            pos_data['val'] = pos_data_vt
-
-        else:
-            pos_data['test'] = pos_data_vt
+    main_data, pos_data = gen_pos_dists(data, pos_dist, y_col)
 
     split_data = {'train': None,
                   'val': None,
                   'test': None,
-                  'pos_data': pos_data}
+                  'pos': pos_data}
 
     # split into train, val, test
     if split_config['val'] or split_config['test']:
@@ -142,11 +149,11 @@ def split_data(data,
             split_data['train'] = main_data
 
     if debug_on:
-        n_train_pos = split_data['train'][split_data['train']['Class'] == 1].shape[0]
-        n_val_pos = split_data['val'][split_data['val']['Class'] == 1].shape[0] if split_data['val'] is not None else 0
-        n_test_pos = split_data['test'][split_data['test']['Class'] == 1].shape[0] if split_data[
-                                                                               'test'] is not None else 0
-        print(f"\nTrain Pos: {n_train_pos} | Val Pos: {n_val_pos} | Test Pos: {n_test_pos}")
+        n_pos = split_data['pos'].shape[0]
+        n_train_pos = split_data['train'][split_data['train'][y_col] == 1].shape[0]
+        n_val_pos = split_data['val'][split_data['val'][y_col] == 1].shape[0] if split_data['val'] is not None else 0
+        n_test_pos = split_data['test'][split_data['test'][y_col] == 1].shape[0] if split_data['test'] is not None else 0
+        print(f"\nTrain Pos: {n_train_pos} | {n_train_pos/n_pos:.2f} || Val Pos: {n_val_pos} | {n_val_pos/n_pos:.2f} || Test Pos: {n_test_pos} | {n_test_pos/n_pos:.2f}")
 
     # split x, y
     for k, v in split_data.items():
