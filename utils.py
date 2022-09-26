@@ -17,7 +17,8 @@ def set_options(fp=2,
                 max_cols=25,
                 edgeitems=30,
                 threshold=10000,
-                all_cols=False):
+                all_cols=False,
+                linewidth=900):
 
     float_p = '%.' + str(fp) + 'f'
 
