@@ -1,4 +1,4 @@
-import numpy as np, pandas as pd
+import math, numpy as np, pandas as pd
 from dataclasses import dataclass
 from typing import List, Any, Union, Optional
 from numpy import ndarray
@@ -45,12 +45,12 @@ def counts_check(data, y_col):
 
     print(f"\nTotal Records: {n_records} | Train: {(train_n_records / n_records):.2f} | Val: {(val_n_records / n_records):.2f} | Test: {(test_n_records / n_records):.2f}")
 
-def gen_pos_dists(data, pos_dist, y_col):
+def gen_pos_dists(data, pos_split_config, y_col):
 
     main_data = data
     pos_data = data[data[y_col] == 1]
 
-    if isinstance(pos_dist, list):
+    if isinstance(pos_split_config, dict):
         main_data = data[data[y_col] == 0]
         # pos_data_base = data[data[y_col] == 1]
 
@@ -81,101 +81,7 @@ def gen_pos_dists(data, pos_dist, y_col):
 
     return main_data, pos_data
 
-def split_data(data,
-               val_test_config,
-               cols,
-               pre_shuffle=False,
-               to_numpy=False,
-               dtype=np.float32,
-               pos_dist=False,
-               random_state=None,
-               debug_on=False):
-
-    train_no_pos = False
-    seed = 0
-
-    x_cols, y_col = cols[0], cols[1][0]
-
-    train_size = 1 - sum(val_test_config)
-
-    split_config = {'train': train_size,
-                    'val': val_test_config[0] / (1 - train_size) if val_test_config[0] else 0,
-                    'test': val_test_config[1] / (1 - train_size) if val_test_config[1] else 0}
-
-    # break out pos class
-
-    main_data, pos_data = gen_pos_dists(data, pos_dist, y_col)
-
-    split_data = {'train': None,
-                  'val': None,
-                  'test': None,
-                  'pos': pos_data}
-
-    # split into train, val, test
-    if split_config['val'] or split_config['test']:
-
-        if split_config['val'] and split_config['test']:
-
-            split_data['train'], vt_data = train_test_split(main_data, train_size=split_config['train'],
-                                                            random_state=random_state, shuffle=pre_shuffle)
-
-            if train_no_pos:
-                vt_data = pd.concat([vt_data, pos_data])
-
-            split_data['val'], split_data['test'] = train_test_split(vt_data, test_size=split_config['test'],
-                                                                     random_state=random_state, shuffle=pre_shuffle)
-
-        else:
-
-            if split_config['val']:
-
-                split_data['train'], split_data['val'] = train_test_split(main_data, train_size=split_config['train'],
-                                                                          random_state=random_state, shuffle=pre_shuffle)
-
-                if train_no_pos:
-                    split_data['val'] = pd.concat([split_data['val'], pos_data]).sample(frac=1)
-
-            if split_config['test']:
-
-                split_data['train'], split_data['test'] = train_test_split(main_data, train_size=split_config['train'],
-                                                                           random_state=random_state, shuffle=pre_shuffle)
-
-                if train_no_pos:
-                    split_data['test'] = pd.concat([split_data['test'], pos_data]).sample(frac=1)
-
-    else:
-        if pre_shuffle:
-            split_data['train'] = main_data.sample(frac=1)
-        else:
-            split_data['train'] = main_data
-
-    if debug_on:
-        n_pos = split_data['pos'].shape[0]
-        n_train_pos = split_data['train'][split_data['train'][y_col] == 1].shape[0]
-        n_val_pos = split_data['val'][split_data['val'][y_col] == 1].shape[0] if split_data['val'] is not None else 0
-        n_test_pos = split_data['test'][split_data['test'][y_col] == 1].shape[0] if split_data['test'] is not None else 0
-        print(f"\nTrain Pos: {n_train_pos} | {n_train_pos/n_pos:.2f} || Val Pos: {n_val_pos} | {n_val_pos/n_pos:.2f} || Test Pos: {n_test_pos} | {n_test_pos/n_pos:.2f}")
-
-    # split x, y
-    for k, v in split_data.items():
-
-        if v is not None:
-
-            x = v[x_cols].astype(dtype)
-            y = v[y_col].astype(dtype)
-
-            if to_numpy:
-                x = x.to_numpy()
-                y = y.to_numpy()
-
-            split_data[k] = ModelData(x, y)
-
-    if debug_on:
-        counts_check(split_data,y_col)
-
-    return split_data
-
-def preprocess_data(datasets):
+def norm_scale_data(datasets):
     for k, v in datasets.items():
 
         norm_scaler = StandardScaler()
@@ -187,5 +93,149 @@ def preprocess_data(datasets):
             datasets[k].x = min_max_scaler.fit_transform(v.x)
 
     return datasets
+
+def process_split_config(split_config):
+
+    if split_config:
+
+        if sum(split_config) > 1:
+            raise ValueError(f"Ivalid Split Config")
+
+        split_config = {'train': split_config[0],
+                        'val': split_config[1],
+                        'test': split_config[2]}
+
+        for k, v in split_config.items():
+            if k == 'train':
+                train_size = 1 - v
+            else:
+                split_config[k] = round(v / train_size,5)
+
+    return split_config
+
+def split_data(data, split_config, pre_shuffle, random_state):
+
+    if split_config == 0:
+        return None
+
+    pos_data = {'train': None,
+                'val': None,
+                'test': None}
+
+    split_data = {'train': None,
+                  'val': None,
+                  'test': None}
+
+    if isinstance(data,list):
+        main_data = data[0]
+        if data[1]:
+            pos_data = data[1]
+    else:
+        main_data = data
+
+    if split_config['val'] or split_config['test']:
+
+        if split_config['val'] and split_config['test']:
+
+            split_data['train'], vt_data = train_test_split(main_data,
+                                                            train_size=split_config['train'],
+                                                            random_state=random_state,
+                                                            shuffle=pre_shuffle)
+
+            split_data['val'], split_data['test'] = train_test_split(vt_data,
+                                                                     test_size=split_config['test'],
+                                                                     random_state=random_state,
+                                                                     shuffle=pre_shuffle)
+        else:
+
+            if split_config['val']:
+                if split_config['train']:
+                    split_data['train'], split_data['val'] = train_test_split(main_data,
+                                                                              train_size=split_config['train'],
+                                                                              random_state=random_state,
+                                                                              shuffle=pre_shuffle)
+                else:
+                    split_data['val'] = main_data
+
+            if split_config['test']:
+                print('-------------------------------')
+                if split_config['train']:
+
+                    split_data['train'], split_data['test'] = train_test_split(main_data,
+                                                                                   train_size=split_config['train'],
+                                                                                   random_state=random_state,
+                                                                                   shuffle=pre_shuffle)
+                else:
+                    split_data['test'] = main_data
+    else:
+
+        if pre_shuffle:
+            split_data['train'] = main_data.sample(frac=1)
+        else:
+            split_data['train'] = main_data
+
+
+    for k, v in split_data.items():
+        if v is not None and pos_data[k] is not None:
+            split_data[k] = pd.concat([split_data[k],pos_data[k]], axis=0)
+
+    return split_data
+
+def preprocess_data(data,
+                    cols,
+                    split_config,
+                    pos_split_config=None,
+                    pre_shuffle=False,
+                    to_numpy=False,
+                    dtype=np.float32,
+                    random_state=None,
+                    debug_on=False):
+
+    train_no_pos = False
+
+    x_cols, y_col = cols[0], cols[1][0]
+
+    split_config = process_split_config(split_config)
+
+    if pos_split_config != 0:
+        if pos_split_config:
+            pos_split_config = process_split_config(pos_split_config)
+        else:
+            pos_split_config = split_config
+
+
+    main_data = data[data[y_col] == 0]
+    pos_data = data[data[y_col] == 1]
+    n_pos = pos_data.shape[0]
+
+    pos_data = split_data(pos_data,pos_split_config,pre_shuffle,random_state)
+
+    datasets = split_data([main_data,pos_data], split_config, pre_shuffle, random_state)
+
+
+    if debug_on:
+        n_train_pos = datasets['train'][datasets['train'][y_col] == 1].shape[0]
+        n_val_pos = datasets['val'][datasets['val'][y_col] == 1].shape[0] if datasets['val'] is not None else 0
+        n_test_pos = datasets['test'][datasets['test'][y_col] == 1].shape[0] if datasets['test'] is not None else 0
+        print(f"\nTrain Pos: {n_train_pos} | {n_train_pos/n_pos:.2f} || Val Pos: {n_val_pos} | {n_val_pos/n_pos:.2f} || Test Pos: {n_test_pos} | {n_test_pos/n_pos:.2f}")
+
+    # split x, y
+    for k, v in datasets.items():
+
+        if v is not None:
+
+            x = v[x_cols].astype(dtype)
+            y = v[y_col].astype(dtype)
+
+            if to_numpy:
+                x = x.to_numpy()
+                y = y.to_numpy()
+
+            datasets[k] = ModelData(x, y)
+
+    if debug_on:
+        counts_check(datasets,y_col)
+
+    return norm_scale_data(datasets)
 
 
