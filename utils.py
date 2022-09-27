@@ -63,7 +63,7 @@ def gen_pos_dists(data, pos_dist, y_col):
         # pos_data = {'train': None, 'val': None, 'test': None}
         #
         # if pos_split_config['train']:
-        #     pos_data['train'], pos_data_vt = train_test_split(pos_data_base, train_size=pos_split_config['train'], random_state=seed, shuffle=pre_shuffle)
+        #     pos_data['train'], pos_data_vt = train_test_split(pos_data_base, train_size=pos_split_config['train'], random_state=random_state, shuffle=pre_shuffle)
         #
         #     pos_split_config
         #
@@ -71,7 +71,7 @@ def gen_pos_dists(data, pos_dist, y_col):
         #     pos_data_vt = pos_data_base
         #
         # if pos_split_config['val'] and pos_split_config['test']:
-        #     pos_data['val'], pos_data['test'] = train_test_split(pos_data_vt, train_size=pos_split_config['val'], random_state=seed, shuffle=pre_shuffle)
+        #     pos_data['val'], pos_data['test'] = train_test_split(pos_data_vt, train_size=pos_split_config['val'], random_state=random_state, shuffle=pre_shuffle)
         #
         # elif pos_split_config['val'] and not pos_split_config['test']:
         #     pos_data['val'] = pos_data_vt
@@ -88,6 +88,7 @@ def split_data(data,
                to_numpy=False,
                dtype=np.float32,
                pos_dist=False,
+               random_state=None,
                debug_on=False):
 
     train_no_pos = False
@@ -116,20 +117,20 @@ def split_data(data,
         if split_config['val'] and split_config['test']:
 
             split_data['train'], vt_data = train_test_split(main_data, train_size=split_config['train'],
-                                                            random_state=seed, shuffle=pre_shuffle)
+                                                            random_state=random_state, shuffle=pre_shuffle)
 
             if train_no_pos:
                 vt_data = pd.concat([vt_data, pos_data])
 
             split_data['val'], split_data['test'] = train_test_split(vt_data, test_size=split_config['test'],
-                                                                     random_state=seed, shuffle=pre_shuffle)
+                                                                     random_state=random_state, shuffle=pre_shuffle)
 
         else:
 
             if split_config['val']:
 
                 split_data['train'], split_data['val'] = train_test_split(main_data, train_size=split_config['train'],
-                                                                          random_state=seed, shuffle=pre_shuffle)
+                                                                          random_state=random_state, shuffle=pre_shuffle)
 
                 if train_no_pos:
                     split_data['val'] = pd.concat([split_data['val'], pos_data]).sample(frac=1)
@@ -137,7 +138,7 @@ def split_data(data,
             if split_config['test']:
 
                 split_data['train'], split_data['test'] = train_test_split(main_data, train_size=split_config['train'],
-                                                                           random_state=seed, shuffle=pre_shuffle)
+                                                                           random_state=random_state, shuffle=pre_shuffle)
 
                 if train_no_pos:
                     split_data['test'] = pd.concat([split_data['test'], pos_data]).sample(frac=1)
