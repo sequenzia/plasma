@@ -158,7 +158,6 @@ def split_data(data, split_config, pre_shuffle, random_state):
                     split_data['val'] = main_data
 
             if split_config['test']:
-                print('-------------------------------')
                 if split_config['train']:
 
                     split_data['train'], split_data['test'] = train_test_split(main_data,
