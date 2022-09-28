@@ -185,6 +185,7 @@ def preprocess_data(data,
                     split_config,
                     pos_split_config=None,
                     pre_shuffle=False,
+                    norm_scale_on=False,
                     to_numpy=False,
                     dtype=np.float32,
                     random_state=None,
@@ -196,18 +197,17 @@ def preprocess_data(data,
 
     split_config = process_split_config(split_config)
 
-    if pos_split_config != 0:
-        if pos_split_config:
-            pos_split_config = process_split_config(pos_split_config)
-        else:
-            pos_split_config = split_config
+    if pos_split_config:
+        pos_split_config = process_split_config(pos_split_config)
 
+    n_pos = data[data[y_col] == 1].shape[0]
 
-    main_data = data[data[y_col] == 0]
-    pos_data = data[data[y_col] == 1]
-    n_pos = pos_data.shape[0]
-
-    pos_data = split_data(pos_data,pos_split_config,pre_shuffle,random_state)
+    if pos_split_config is not None:
+        main_data = data[data[y_col] == 0]
+        pos_data = split_data(data[data[y_col] == 1], pos_split_config, pre_shuffle, random_state)
+    else:
+        main_data = data
+        pos_data = None
 
     datasets = split_data([main_data,pos_data], split_config, pre_shuffle, random_state)
 
@@ -235,6 +235,9 @@ def preprocess_data(data,
     if debug_on:
         counts_check(datasets,y_col)
 
-    return norm_scale_data(datasets)
+    if norm_scale_on:
+        datasets = norm_scale_data(datasets)
+
+    return datasets.values()
 
 
